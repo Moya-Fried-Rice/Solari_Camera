@@ -7,6 +7,7 @@ import '../utils/data_entry.dart';
 import "../utils/snackbar.dart";
 
 import "descriptor_tile.dart";
+import 'dart:convert'; 
 
 class CharacteristicTile extends StatefulWidget {
   final BluetoothCharacteristic characteristic;
@@ -89,8 +90,18 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
     return Text(uuid, style: TextStyle(fontSize: 13));
   }
 
+  // Widget buildValue(BuildContext context) {
+  //   String data = _value.toString();
+  //   return Text(data, style: TextStyle(fontSize: 13, color: Colors.grey));
+  // }
+  
   Widget buildValue(BuildContext context) {
-    String data = _value.toString();
+    String data;
+    try {
+      data = utf8.decode(_value);  // decode bytes as UTF-8 string
+    } catch (e) {
+      data = _value.toString();    // fallback to raw bytes if not text
+    }
     return Text(data, style: TextStyle(fontSize: 13, color: Colors.grey));
   }
 
