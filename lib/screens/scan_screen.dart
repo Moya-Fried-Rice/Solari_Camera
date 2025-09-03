@@ -5,8 +5,6 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import 'device_screen.dart';
 import '../utils/snackbar.dart';
-import '../widgets/system_device_tile.dart';
-import '../widgets/scan_result_tile.dart';
 import '../utils/extra.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -17,29 +15,51 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen> {
-  List<BluetoothDevice> _systemDevices = [];
-  List<ScanResult> _scanResults = [];
+  List<ScanResult> _smartGlassesDevices = [];
   bool _isScanning = false;
   late StreamSubscription<List<ScanResult>> _scanResultsSubscription;
   late StreamSubscription<bool> _isScanningSubscription;
+
+  // Smart glasses service UUID
+  final String _smartGlassesServiceUUID =
+      '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 
   @override
   void initState() {
     super.initState();
 
-    _scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
-      if (mounted) {
-        setState(() => _scanResults = results);
-      }
-    }, onError: (e) {
-      Snackbar.show(ABC.b, prettyException("Scan Error:", e), success: false);
-    });
+    _scanResultsSubscription = FlutterBluePlus.scanResults.listen(
+      (results) {
+        if (mounted) {
+          // Filter devices that advertise the smart glasses service UUID
+          List<ScanResult> filteredResults = results.where((result) {
+            return result.advertisementData.serviceUuids.any(
+              (uuid) =>
+                  uuid.str.toLowerCase() ==
+                  _smartGlassesServiceUUID.toLowerCase(),
+            );
+          }).toList();
+
+          setState(() => _smartGlassesDevices = filteredResults);
+        }
+      },
+      onError: (e) {
+        Snackbar.show(
+          ABC.b,
+          prettyException("Smart Glasses Scan Error:", e),
+          success: false,
+        );
+      },
+    );
 
     _isScanningSubscription = FlutterBluePlus.isScanning.listen((state) {
       if (mounted) {
         setState(() => _isScanning = state);
       }
     });
+
+    // Start scanning automatically
+    _startSmartGlassesScan();
   }
 
   @override
@@ -49,39 +69,24 @@ class _ScanScreenState extends State<ScanScreen> {
     super.dispose();
   }
 
-  Future onScanPressed() async {
-    try {
-      // `withServices` is required on iOS for privacy purposes, ignored on android.
-      var withServices = [Guid("180f")]; // Battery Level Service
-      _systemDevices = await FlutterBluePlus.systemDevices(withServices);
-    } catch (e, backtrace) {
-      Snackbar.show(ABC.b, prettyException("System Devices Error:", e), success: false);
-      print(e);
-      print("backtrace: $backtrace");
-    }
+  Future _startSmartGlassesScan() async {
     try {
       await FlutterBluePlus.startScan(
-        timeout: const Duration(seconds: 15),
+        timeout: const Duration(
+          seconds: 30,
+        ), // Longer timeout for smart glasses
         withServices: [
-          // Guid("180f"), // battery
-          // Guid("180a"), // device info
-          // Guid("1800"), // generic access
-          // Guid("6e400001-b5a3-f393-e0a9-e50e24dcca9e"), // Nordic UART
-        ],
-        webOptionalServices: [
-          Guid("180f"), // battery
-          Guid("180a"), // device info
-          Guid("1800"), // generic access
-          Guid("6e400001-b5a3-f393-e0a9-e50e24dcca9e"), // Nordic UART
-        ],
+          Guid(_smartGlassesServiceUUID),
+        ], // Filter by specific service UUID
       );
     } catch (e, backtrace) {
-      Snackbar.show(ABC.b, prettyException("Start Scan Error:", e), success: false);
+      Snackbar.show(
+        ABC.b,
+        prettyException("Smart Glasses Scan Error:", e),
+        success: false,
+      );
       print(e);
       print("backtrace: $backtrace");
-    }
-    if (mounted) {
-      setState(() {});
     }
   }
 
@@ -89,7 +94,11 @@ class _ScanScreenState extends State<ScanScreen> {
     try {
       FlutterBluePlus.stopScan();
     } catch (e, backtrace) {
-      Snackbar.show(ABC.b, prettyException("Stop Scan Error:", e), success: false);
+      Snackbar.show(
+        ABC.b,
+        prettyException("Stop Scan Error:", e),
+        success: false,
+      );
       print(e);
       print("backtrace: $backtrace");
     }
@@ -97,16 +106,22 @@ class _ScanScreenState extends State<ScanScreen> {
 
   void onConnectPressed(BluetoothDevice device) {
     device.connectAndUpdateStream().catchError((e) {
-      Snackbar.show(ABC.c, prettyException("Connect Error:", e), success: false);
+      Snackbar.show(
+        ABC.c,
+        prettyException("Connect Error:", e),
+        success: false,
+      );
     });
     MaterialPageRoute route = MaterialPageRoute(
-        builder: (context) => DeviceScreen(device: device), settings: RouteSettings(name: '/DeviceScreen'));
+      builder: (context) => DeviceScreen(device: device),
+      settings: RouteSettings(name: '/DeviceScreen'),
+    );
     Navigator.of(context).push(route);
   }
 
   Future onRefresh() {
     if (_isScanning == false) {
-      FlutterBluePlus.startScan(timeout: const Duration(seconds: 15));
+      _startSmartGlassesScan();
     }
     if (mounted) {
       setState(() {});
@@ -115,52 +130,65 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   Widget buildScanButton() {
-    return Row(children: [
-      if (FlutterBluePlus.isScanningNow)
-        buildSpinner()
-      else
-        ElevatedButton(
-            onPressed: onScanPressed,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
-            ),
-            child: Text("SCAN"))
-    ]);
-  }
-
-  Widget buildSpinner() {
-    return Padding(
-      padding: const EdgeInsets.all(14.0),
-      child: AspectRatio(
-        aspectRatio: 1.0,
-        child: CircularProgressIndicator(
-          backgroundColor: Colors.black12,
-          color: Colors.black26,
-        ),
-      ),
+    return Row(
+      children: [
+        if (FlutterBluePlus.isScanningNow)
+          Text("Scanning...")
+        else
+          TextButton(
+            onPressed: _startSmartGlassesScan,
+            child: Text("Scan for Smart Glasses"),
+          ),
+      ],
     );
   }
 
-  List<Widget> _buildSystemDeviceTiles() {
-    return _systemDevices
-        .map(
-          (d) => SystemDeviceTile(
-            device: d,
-            onOpen: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => DeviceScreen(device: d),
-                settings: RouteSettings(name: '/DeviceScreen'),
-              ),
+  List<Widget> _buildSmartGlassesTiles() {
+    if (_smartGlassesDevices.isEmpty) {
+      return [
+        Container(
+          child: Center(
+            child: Column(
+              children: [
+                Text(
+                  _isScanning
+                      ? 'Scanning for Smart Glasses...'
+                      : 'No Smart Glasses Found',
+                ),
+                if (!_isScanning)
+                  Text(
+                    'Looking for devices with service UUID: ${_smartGlassesServiceUUID}',
+                  ),
+              ],
             ),
-            onConnect: () => onConnectPressed(d),
+          ),
+        ),
+      ];
+    }
+
+    return _smartGlassesDevices
+        .map(
+          (result) => Container(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  result.device.platformName.isNotEmpty
+                      ? result.device.platformName
+                      : 'Solari Smart Glasses',
+                ),
+                Text('MAC: ${result.device.remoteId}'),
+                Text('RSSI: ${result.rssi} dBm'),
+                Text('Service: ${_smartGlassesServiceUUID}'),
+                TextButton(
+                  onPressed: () => onConnectPressed(result.device),
+                  child: Text('Connect'),
+                ),
+              ],
+            ),
           ),
         )
         .toList();
-  }
-
-  Iterable<Widget> _buildScanResultTiles() {
-    return _scanResults.map((r) => ScanResultTile(result: r, onTap: () => onConnectPressed(r.device)));
   }
 
   @override
@@ -169,19 +197,13 @@ class _ScanScreenState extends State<ScanScreen> {
       key: Snackbar.snackBarKeyB,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Find Devices'),
-          actions: [buildScanButton(), const SizedBox(width: 15)],
+          title: const Text('Solari - Smart Glasses Scanner'),
+          actions: [buildScanButton()],
         ),
         body: RefreshIndicator(
           onRefresh: onRefresh,
-          child: ListView(
-            children: <Widget>[
-              ..._buildSystemDeviceTiles(),
-              ..._buildScanResultTiles(),
-            ],
-          ),
+          child: ListView(children: _buildSmartGlassesTiles()),
         ),
-        // floatingActionButton: buildScanButton(context),
       ),
     );
   }

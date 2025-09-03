@@ -44,7 +44,11 @@ class _DescriptorTileState extends State<DescriptorTile> {
       await d.read();
       Snackbar.show(ABC.c, "Descriptor Read : Success", success: true);
     } catch (e, backtrace) {
-      Snackbar.show(ABC.c, prettyException("Descriptor Read Error:", e), success: false);
+      Snackbar.show(
+        ABC.c,
+        prettyException("Descriptor Read Error:", e),
+        success: false,
+      );
       print(e);
       print("backtrace: $backtrace");
     }
@@ -58,7 +62,11 @@ class _DescriptorTileState extends State<DescriptorTile> {
         Snackbar.show(ABC.c, "Descriptor Write : Success", success: true);
       }
     } catch (e, backtrace) {
-      Snackbar.show(ABC.c, prettyException("Descriptor Write Error:", e), success: false);
+      Snackbar.show(
+        ABC.c,
+        prettyException("Descriptor Write Error:", e),
+        success: false,
+      );
       print(e);
       print("backtrace: $backtrace");
     }
@@ -66,51 +74,39 @@ class _DescriptorTileState extends State<DescriptorTile> {
 
   Widget buildUuid(BuildContext context) {
     String uuid = '0x${widget.descriptor.uuid.str.toUpperCase()}';
-    return Text(uuid, style: TextStyle(fontSize: 13));
+    return Text(uuid);
   }
 
   Widget buildValue(BuildContext context) {
     String data = _value.toString();
-    return Text(data, style: TextStyle(fontSize: 13, color: Colors.grey));
+    return Text(data);
   }
 
   Widget buildReadButton(BuildContext context) {
-    return TextButton(
-      onPressed: onReadPressed,
-      child: Text("Read"),
-    );
+    return TextButton(onPressed: onReadPressed, child: Text("Read"));
   }
 
   Widget buildWriteButton(BuildContext context) {
-    return TextButton(
-      onPressed: onWritePressed,
-      child: Text("Write"),
-    );
+    return TextButton(onPressed: onWritePressed, child: Text("Write"));
   }
 
   Widget buildButtonRow(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        buildReadButton(context),
-        buildWriteButton(context),
-      ],
+      children: <Widget>[buildReadButton(context), buildWriteButton(context)],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text('Descriptor', style: TextStyle(color: Theme.of(context).primaryColor)),
-          buildUuid(context),
-          buildValue(context),
-        ],
-      ),
-      subtitle: buildButtonRow(context),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text('Descriptor'),
+        buildUuid(context),
+        buildValue(context),
+        buildButtonRow(context),
+      ],
     );
   }
 }

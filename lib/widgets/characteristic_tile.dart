@@ -7,13 +7,17 @@ import '../utils/data_entry.dart';
 import "../utils/snackbar.dart";
 
 import "descriptor_tile.dart";
-import 'dart:convert'; 
+import 'dart:convert';
 
 class CharacteristicTile extends StatefulWidget {
   final BluetoothCharacteristic characteristic;
   final List<DescriptorTile> descriptorTiles;
 
-  const CharacteristicTile({super.key, required this.characteristic, required this.descriptorTiles});
+  const CharacteristicTile({
+    super.key,
+    required this.characteristic,
+    required this.descriptorTiles,
+  });
 
   @override
   State<CharacteristicTile> createState() => _CharacteristicTileState();
@@ -27,7 +31,9 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
   @override
   void initState() {
     super.initState();
-    _lastValueSubscription = widget.characteristic.lastValueStream.listen((value) {
+    _lastValueSubscription = widget.characteristic.lastValueStream.listen((
+      value,
+    ) {
       _value = value;
       _update();
     });
@@ -56,7 +62,10 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
     try {
       List<int>? value = await DataEntry.enterData(context);
       if (value != null) {
-        await c.write(value, withoutResponse: c.properties.writeWithoutResponse);
+        await c.write(
+          value,
+          withoutResponse: c.properties.writeWithoutResponse,
+        );
         Snackbar.show(ABC.c, "Write: Success", success: true);
         if (c.properties.read) {
           await c.read();
@@ -79,7 +88,11 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
       }
       _update();
     } catch (e, backtrace) {
-      Snackbar.show(ABC.c, prettyException("Subscribe Error:", e), success: false);
+      Snackbar.show(
+        ABC.c,
+        prettyException("Subscribe Error:", e),
+        success: false,
+      );
       print(e);
       print("backtrace: $backtrace");
     }
@@ -87,51 +100,54 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
 
   Widget buildUuid(BuildContext context) {
     String uuid = '0x${widget.characteristic.uuid.str.toUpperCase()}';
-    return Text(uuid, style: TextStyle(fontSize: 13));
+    return Text(uuid);
   }
 
   // Widget buildValue(BuildContext context) {
   //   String data = _value.toString();
   //   return Text(data, style: TextStyle(fontSize: 13, color: Colors.grey));
   // }
-  
+
   Widget buildValue(BuildContext context) {
     String data;
     try {
-      data = utf8.decode(_value);  // decode bytes as UTF-8 string
+      data = utf8.decode(_value); // decode bytes as UTF-8 string
     } catch (e) {
-      data = _value.toString();    // fallback to raw bytes if not text
+      data = _value.toString(); // fallback to raw bytes if not text
     }
-    return Text(data, style: TextStyle(fontSize: 13, color: Colors.grey));
+    return Text(data);
   }
 
   Widget buildReadButton(BuildContext context) {
     return TextButton(
-        child: Text("Read"),
-        onPressed: () async {
-          await onReadPressed();
-          _update();
-        });
+      child: Text("Read"),
+      onPressed: () async {
+        await onReadPressed();
+        _update();
+      },
+    );
   }
 
   Widget buildWriteButton(BuildContext context) {
     bool withoutResp = widget.characteristic.properties.writeWithoutResponse;
     return TextButton(
-        child: Text(withoutResp ? "WriteNoResp" : "Write"),
-        onPressed: () async {
-          await onWritePressed();
-          _update();
-        });
+      child: Text(withoutResp ? "WriteNoResp" : "Write"),
+      onPressed: () async {
+        await onWritePressed();
+        _update();
+      },
+    );
   }
 
   Widget buildSubscribeButton(BuildContext context) {
     bool isNotifying = widget.characteristic.isNotifying;
     return TextButton(
-        child: Text(isNotifying ? "Unsubscribe" : "Subscribe"),
-        onPressed: () async {
-          await onSubscribePressed();
-          _update();
-        });
+      child: Text(isNotifying ? "Unsubscribe" : "Subscribe"),
+      onPressed: () async {
+        await onSubscribePressed();
+        _update();
+      },
+    );
   }
 
   Widget buildButtonRow(BuildContext context) {
@@ -152,18 +168,14 @@ class _CharacteristicTileState extends State<CharacteristicTile> {
   @override
   Widget build(BuildContext context) {
     return ExpansionTile(
-      title: ListTile(
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text('Characteristic', style: TextStyle(color: Theme.of(context).primaryColor)),
-            buildUuid(context),
-            buildValue(context),
-          ],
-        ),
-        subtitle: buildButtonRow(context),
-        contentPadding: const EdgeInsets.all(0.0),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('Characteristic'),
+          buildUuid(context),
+          buildValue(context),
+          buildButtonRow(context),
+        ],
       ),
       children: widget.descriptorTiles,
     );

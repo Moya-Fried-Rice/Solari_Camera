@@ -12,21 +12,21 @@ import 'screens/scan_screen.dart';
 
 void main() {
   FlutterBluePlus.setLogLevel(LogLevel.verbose, color: true);
-  runApp(const FlutterBlueApp());
+  runApp(const SolariApp());
 }
 
 //
-// This widget shows BluetoothOffScreen or
-// ScanScreen depending on the adapter state
+// Solari - Smart Glasses Scanner App
+// Shows BluetoothOffScreen or ScanScreen depending on the adapter state
 //
-class FlutterBlueApp extends StatefulWidget {
-  const FlutterBlueApp({Key? key}) : super(key: key);
+class SolariApp extends StatefulWidget {
+  const SolariApp({Key? key}) : super(key: key);
 
   @override
-  State<FlutterBlueApp> createState() => _FlutterBlueAppState();
+  State<SolariApp> createState() => _SolariAppState();
 }
 
-class _FlutterBlueAppState extends State<FlutterBlueApp> {
+class _SolariAppState extends State<SolariApp> {
   BluetoothAdapterState _adapterState = BluetoothAdapterState.unknown;
 
   late StreamSubscription<BluetoothAdapterState> _adapterStateStateSubscription;
@@ -34,7 +34,9 @@ class _FlutterBlueAppState extends State<FlutterBlueApp> {
   @override
   void initState() {
     super.initState();
-    _adapterStateStateSubscription = FlutterBluePlus.adapterState.listen((state) {
+    _adapterStateStateSubscription = FlutterBluePlus.adapterState.listen((
+      state,
+    ) {
       _adapterState = state;
       if (mounted) {
         setState(() {});
@@ -55,7 +57,7 @@ class _FlutterBlueAppState extends State<FlutterBlueApp> {
         : BluetoothOffScreen(adapterState: _adapterState);
 
     return MaterialApp(
-      color: Colors.lightBlue,
+      title: 'Solari',
       home: screen,
       navigatorObservers: [BluetoothAdapterStateObserver()],
     );
@@ -63,7 +65,7 @@ class _FlutterBlueAppState extends State<FlutterBlueApp> {
 }
 
 //
-// This observer listens for Bluetooth Off and dismisses the DeviceScreen
+// Observer for smart glasses device disconnection
 //
 class BluetoothAdapterStateObserver extends NavigatorObserver {
   StreamSubscription<BluetoothAdapterState>? _adapterStateSubscription;
@@ -72,10 +74,12 @@ class BluetoothAdapterStateObserver extends NavigatorObserver {
   void didPush(Route route, Route? previousRoute) {
     super.didPush(route, previousRoute);
     if (route.settings.name == '/DeviceScreen') {
-      // Start listening to Bluetooth state changes when a new route is pushed
-      _adapterStateSubscription ??= FlutterBluePlus.adapterState.listen((state) {
+      // Start listening to Bluetooth state changes when connected to smart glasses
+      _adapterStateSubscription ??= FlutterBluePlus.adapterState.listen((
+        state,
+      ) {
         if (state != BluetoothAdapterState.on) {
-          // Pop the current route if Bluetooth is off
+          // Disconnect from smart glasses if Bluetooth is off
           navigator?.pop();
         }
       });
@@ -85,7 +89,7 @@ class BluetoothAdapterStateObserver extends NavigatorObserver {
   @override
   void didPop(Route route, Route? previousRoute) {
     super.didPop(route, previousRoute);
-    // Cancel the subscription when the route is popped
+    // Cancel the subscription when disconnecting from smart glasses
     _adapterStateSubscription?.cancel();
     _adapterStateSubscription = null;
   }

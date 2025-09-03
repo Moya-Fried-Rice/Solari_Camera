@@ -12,38 +12,38 @@ class BluetoothOffScreen extends StatelessWidget {
   final BluetoothAdapterState? adapterState;
 
   Widget buildBluetoothOffIcon(BuildContext context) {
-    return const Icon(
-      Icons.bluetooth_disabled,
-      size: 200.0,
-      color: Colors.white54,
-    );
+    return Text('[Bluetooth Off]');
   }
 
   Widget buildTitle(BuildContext context) {
     String? state = adapterState?.toString().split(".").last;
-    return Text(
-      'Bluetooth Adapter is ${state ?? 'not available'}',
-      style: Theme.of(context).primaryTextTheme.titleSmall?.copyWith(color: Colors.white),
+    return Column(
+      children: [
+        Text('Solari Smart Glasses Scanner'),
+        Text('Bluetooth is ${state ?? 'not available'}'),
+        Text('Please enable Bluetooth to scan for smart glasses'),
+      ],
     );
   }
 
   Widget buildTurnOnButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: ElevatedButton(
-        child: const Text('TURN ON'),
-        onPressed: () async {
-          try {
-            if (!kIsWeb && Platform.isAndroid) {
-              await FlutterBluePlus.turnOn();
-            }
-          } catch (e, backtrace) {
-            Snackbar.show(ABC.a, prettyException("Error Turning On:", e), success: false);
-            print("$e");
-            print("backtrace: $backtrace");
+    return TextButton(
+      child: const Text('Enable Bluetooth'),
+      onPressed: () async {
+        try {
+          if (!kIsWeb && Platform.isAndroid) {
+            await FlutterBluePlus.turnOn();
           }
-        },
-      ),
+        } catch (e, backtrace) {
+          Snackbar.show(
+            ABC.a,
+            prettyException("Error Turning On:", e),
+            success: false,
+          );
+          print("$e");
+          print("backtrace: $backtrace");
+        }
+      },
     );
   }
 
@@ -52,7 +52,6 @@ class BluetoothOffScreen extends StatelessWidget {
     return ScaffoldMessenger(
       key: Snackbar.snackBarKeyA,
       child: Scaffold(
-        backgroundColor: Colors.lightBlue,
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
